@@ -53,6 +53,10 @@ const listingSchema = new mongoose.Schema({
     max: 5,
     default: 0
   },
+  reviewCount: {
+    type: Number,
+    default: 0
+  },
   isBooked: {
     type: Boolean,
     default: false,

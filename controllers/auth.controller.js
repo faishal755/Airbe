@@ -16,13 +16,16 @@ export const signUp = async (req, res) => {
       password: hashpassword,
     });
     let token = await genToken(user._id);
+    const isProduction = process.env.NODE_ENVIORNMENT === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENVIORNMENT === "production",
-      sameSite: "strict",
+      secure: isProduction,           // false on localhost (HTTP), true on HTTPS
+      sameSite: isProduction ? "none" : "lax", // "lax" works for localhost
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    return res.status(200).json(user);
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    delete userObj.password;
+    return res.status(200).json({ ...userObj, token });
   } catch (error) {
     return res.status(500).json({ message: `signup error ${error}` });
   }
@@ -40,20 +43,28 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Incorrect Password" });
     }
     let token = await genToken(user._id)
+    const isProduction = process.env.NODE_ENVIORNMENT === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProduction,           // false on localhost (HTTP), true on HTTPS
+      sameSite: isProduction ? "none" : "lax", // "lax" works for localhost
       maxAge: 7 * 24 * 60 * 60 * 1000
     })
-    return res.status(200).json(user)
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    delete userObj.password;
+    return res.status(200).json({ ...userObj, token });
   } catch (error) {
     return res.status(500).json({ message: `login error ${error}` });
   }
 };
 export const logOut = async (req, res) => {
   try {
-    res.clearCookie("token")
+    const isProduction = process.env.NODE_ENVIORNMENT === "production";
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax"
+    });
     return res.status(200).json({ message: "Logout Successfully" })
   } catch (error) {
     return res.status(500).json({ message: `Logout Error ${error}` });
