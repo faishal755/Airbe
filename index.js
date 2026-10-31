@@ -11,7 +11,9 @@ import listingRouter from "./routes/listing.route.js";
 import bookingRouter from "./routes/booking.route.js";
 import botRouter from "./routes/bot.route.js";
 import reviewRouter from "./routes/review.route.js";
+import paymentRouter from "./routes/payment.route.js";
 import rateLimit from "express-rate-limit";
+import { syncExpiredBookings } from "./utils/syncBookings.js";
 
 let port = process.env.PORT || 6000;
 
@@ -49,8 +51,14 @@ app.use("/api/listing", listingRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/bot", botRouter);
 app.use("/api/review", reviewRouter);
+app.use("/api/payment", paymentRouter);
 
-connectDb();
+connectDb().then(() => {
+  // Sync expired bookings immediately after DB connection
+  syncExpiredBookings();
+  // Continuously check and remove expired bookings every 60 seconds
+  setInterval(syncExpiredBookings, 60 * 1000);
+});
 
 app.listen(port, () => {
   console.log(`server started at http://localhost:${port}`);
